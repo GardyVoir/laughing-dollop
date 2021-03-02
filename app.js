@@ -38,12 +38,6 @@ app.use(function (req, res, next) {
   next();
 });
 
-// dummy database
-
-// var users = {
-//   tj: { name: "tj" },
-// };
-
 // when you create a user, generate a salt
 // and hash the password ('foobar' is the pass here)
 
@@ -53,8 +47,6 @@ app.use(function (req, res, next) {
 //   users.tj.salt = salt;
 //   users.tj.hash = hash;
 // });
-
-// Authenticate using our plain-object database of doom!
 
 async function authenticate(name, pass, fn) {
   if (!module.parent) console.log("authenticating %s:%s", name, pass);
@@ -79,6 +71,37 @@ async function authenticate(name, pass, fn) {
   return fn(null, user);
 }
 
+async function signup(email, name, pass, fn) {
+  if (!module.parent) console.log("SignUp %s:%s:%s", email, name, pass);
+
+  await client.connect();
+  const database = client.db('CoffreFort');
+  const Users = database.collection('Users');
+
+  //TODO vérifier que l'email soit bien un email (regex/validator)
+
+  var user = await Users.findOne({ email: email })
+  if (user) {
+    err = "Cette adresse mail existe déjà";
+    console.log(err)
+    return fn(err);
+  }
+
+  var user = await Users.findOne({ utilisateur: name })
+  if (user) {
+    err = "Ce nom d'utilisateur existe déjà";
+    console.log(err)
+    return fn(err);
+  }
+
+  //TODO remplacer la ligne suivante par un hash
+  var hashedPass = pass
+
+  await Users.insertOne({ email: email, utilisateur: name, mdp: hashedPass })
+  var user = await Users.findOne({ utilisateur: name, mdp: pass })
+  return fn(null, user);
+}
+
 function restrict(req, res, next) {
   if (req.session.user) {
     next();
@@ -93,7 +116,7 @@ app.get("/", function (req, res) {
 });
 
 app.get("/restricted", restrict, function (req, res) {
-  res.send('Wahoo! restricted area, click to <a href="/logout">logout</a>');
+  res.send('Hello ' + req.session.user.utilisateur + ' Wahoo! restricted area, click to <a href="/logout">logout</a>');
 });
 
 app.get("/logout", function (req, res) {
@@ -108,6 +131,23 @@ app.get("/login", function (req, res) {
   res.render("login");
 });
 
+app.get("/signup", function (req, res) {
+  res.render("signup");
+});
+
+app.post("/signup", function (req, res) {
+  signup(req.body.email, req.body.username, req.body.password, function (err, user) {
+    if (err) {
+      req.session.error = err
+      res.redirect("/signup");
+    } else {
+      req.session.user = user;
+      res.redirect("/restricted");
+    }
+  })
+
+});
+
 app.post("/login", function (req, res) {
   authenticate(req.body.username, req.body.password, function (err, user) {
     if (user) {
@@ -118,12 +158,7 @@ app.post("/login", function (req, res) {
         // in the session store to be retrieved,
         // or in this case the entire user object
         req.session.user = user;
-        req.session.success =
-          "Authenticated as " +
-          user.utilisateur +
-          ' click to <a href="/logout">logout</a>. ' +
-          ' You may now access <a href="/restricted">/restricted</a>.';
-        res.redirect("back"); //Rediriger directement sur la page d'upload
+        res.redirect("restricted"); //Rediriger directement sur la page d'upload
       });
     } else {
       req.session.error =
@@ -137,5 +172,4 @@ app.post("/login", function (req, res) {
 /* istanbul ignore next */
 if (!module.parent) {
   app.listen(3000);
-  console.log("Express started on port 3000");
 }
