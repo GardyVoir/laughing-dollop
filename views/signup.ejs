@@ -1,12 +1,15 @@
-<% var title='Login' %>
+<% var title="S'inscrire" %>
   <%- include('head'); -%>
 
-    <h1>Login</h1>
+    <h1>S'inscrire</h1>
     <%- message %>
-      Pas de compte ? <a href="/signup">S'inscrire</a>.
-      <form method="post" action="/login">
+      <form method="post" action="/signup">
         <p>
-          <label>Username:</label>
+          <label>Email:</label>
+          <input type="text" name="email">
+        </p>
+        <p>
+          <label>Pseudo:</label>
           <input type="text" name="username">
         </p>
         <p>
@@ -14,7 +17,7 @@
           <input type="text" name="password">
         </p>
         <p>
-          <input type="submit" value="Login">
+          <input type="submit" value="S'inscrire">
         </p>
       </form>
 
