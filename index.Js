@@ -1,8 +1,12 @@
 const express = require("express");
 const app = express();
 const bcrypt = require("bcrypt");
+var fs = require('fs');
 const path = require("path");
 var session = require("express-session");
+var multer = require('multer');
+var imgModel = require('./models/models');
+const bodyParser = require('body-parser');
 
 const { MongoClient } = require("mongodb");
 const password = "";
@@ -23,6 +27,8 @@ app.set("views", path.join(__dirname, "views"));
 // middleware
 
 app.use(express.urlencoded({ extended: false }));
+app.use(bodyParser.json())
+app.use(bodyParser.urlencoded({ extended: false }))
 app.use(
   session({
     resave: false, // don't save session if unmodified
@@ -100,6 +106,54 @@ async function signup(email, name, pass, fn) {
   });
 }
 
+// upload files code
+
+var storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'uploads')
+    },
+    filename: (req, file, cb) => {
+        cb(null, file.fieldname + '-' + Date.now())
+    }
+});
+ 
+var upload = multer({ storage: storage });
+
+// app.get('/restricted', (req, res) => {
+//     imgModel.find({}, (err, items) => {
+//         if (err) {
+//             console.log(err);
+//             res.status(500).send('Une erreur est survenue', err);
+//         }
+//         else {
+//             res.render('restricted', { items: items });
+//         }
+//     });
+// });
+
+app.post('/', upload.single('image'), (req, res, next) => {
+ 
+    var obj = {
+        name: req.body.name,
+        desc: req.body.desc,
+        img: {
+            data: fs.readFileSync(path.join(__dirname + '/uploads/' + req.file.filename)),
+            contentType: 'image/png'
+        }
+    }
+    imgModel.create(obj, (err, item) => {
+        if (err) {
+            console.log(err);
+        }
+        else {
+            // item.save();
+            res.redirect('/');
+        }
+    });
+});
+
+// restict
+
 function restrict(req, res, next) {
   if (req.session.user) {
     next();
@@ -114,11 +168,7 @@ app.get("/", function (req, res) {
 });
 
 app.get("/restricted", restrict, function (req, res) {
-  res.send(
-    "Bonjour " +
-      req.session.user.utilisateur +
-      ' Bienvenue sur votre coffre fort, cliquer ici pour vous <a href="/logout">déconnectez</a>'
-  );
+  res.render("restricted")
 });
 
 app.get("/logout", function (req, res) {
