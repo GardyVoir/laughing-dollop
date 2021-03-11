@@ -15,7 +15,7 @@ const password = "";
 const rounds = 10;
 
 const url =
-"mongodb+srv://User:cvGh1hh1QjKcsnfw@securitocluster.sbsua.mongodb.net/CoffreFort?retryWrites=true&w=majority";
+  "mongodb+srv://User:cvGh1hh1QjKcsnfw@securitocluster.sbsua.mongodb.net/CoffreFort?retryWrites=true&w=majority";
 const client = new MongoClient(url, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
