@@ -1,0 +1,17 @@
+<% var title='Reset' %>
+    <%- include('head'); -%>
+
+        <h1>Reset de mot de passe</h1>
+        <%- message %>
+            <form method="post" action="/reset/:token">
+                <!-- le token ici ne marche pas -->
+                <p>
+                    <label>Password:</label>
+                    <input type="text" name="password">
+                </p>
+                <p>
+                    <input type="submit" value="Valider nouveau mot de passe">
+                </p>
+            </form>
+
+            <%- include('foot'); -%>

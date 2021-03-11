@@ -1,0 +1,17 @@
+<% var title='Oublié' %>
+    <%- include('head'); -%>
+
+        <h1>Mot de passe oublié</h1>
+        <%- message %>
+            Entrez votre adresse Email.
+            <form method="post" action="/forgot">
+                <p>
+                    <label>Email:</label>
+                    <input type="text" name="email">
+                </p>
+                <p>
+                    <input type="submit" value="Envoyer un mail de récupération">
+                </p>
+            </form>
+
+            <%- include('foot'); -%>
