@@ -1,25 +1,27 @@
 const express = require("express");
 const app = express();
 const bcrypt = require("bcrypt");
-var fs = require('fs');
+var fs = require("fs");
 const path = require("path");
 var session = require("express-session");
-var multer = require('multer');
-var imgModel = require('./models/models');
-const bodyParser = require('body-parser');
+var multer = require("multer");
+var imgModel = require("./models/models");
+const bodyParser = require("body-parser");
+const methodOverride = require("method-override");
+const GridFsStorage = require("multer-gridfs-storage");
 
 const { MongoClient } = require("mongodb");
 const password = "";
 const rounds = 10;
 
 const url =
-  "mongodb+srv://User:cvGh1hh1QjKcsnfw@securitocluster.sbsua.mongodb.net/CoffreFort?retryWrites=true&w=majority";
+"mongodb+srv://User:cvGh1hh1QjKcsnfw@securitocluster.sbsua.mongodb.net/CoffreFort?retryWrites=true&w=majority";
 const client = new MongoClient(url, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 });
 
-// config
+//config
 
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
@@ -27,8 +29,8 @@ app.set("views", path.join(__dirname, "views"));
 // middleware
 
 app.use(express.urlencoded({ extended: false }));
-app.use(bodyParser.json())
-app.use(bodyParser.urlencoded({ extended: false }))
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: false }));
 app.use(
   session({
     resave: false, // don't save session if unmodified
@@ -55,7 +57,7 @@ async function authenticate(name, pass, fn) {
   const database = client.db("CoffreFort");
   const Users = database.collection("Users");
   var user = await Users.findOne({ utilisateur: name });
-  if (!user) return fn(new Error("cannot find user"));
+  if (!user) return fn(new Error("Utilisateur introuvable"));
   // apply the same algorithm to the POSTed password, applying
   // the hash against the pass / salt, if there is a match we
   // found the user
@@ -65,14 +67,13 @@ async function authenticate(name, pass, fn) {
       return console.error(err);
     }
     console.log(res);
-    if (res === true) {
+    if (res == true) {
       return fn(null, user);
     }
-    if (res === false) {
-        redirect("/login");
+    if (res == false) {
+      return fn(new Error("mot de passe incorrect"));
     }
   });
-  await client.close();
 }
 
 async function signup(email, name, pass, fn) {
@@ -106,53 +107,6 @@ async function signup(email, name, pass, fn) {
   });
 }
 
-// upload files code
-
-var storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, 'uploads')
-    },
-    filename: (req, file, cb) => {
-        cb(null, file.fieldname + '-' + Date.now())
-    }
-});
- 
-var upload = multer({ storage: storage });
-
-// app.get('/restricted', (req, res) => {
-//     imgModel.find({}, (err, items) => {
-//         if (err) {
-//             console.log(err);
-//             res.status(500).send('Une erreur est survenue', err);
-//         }
-//         else {
-//             res.render('restricted', { items: items });
-//         }
-//     });
-// });
-
-app.post('/', upload.single('image'), (req, res, next) => {
- 
-    var obj = {
-        name: req.body.name,
-        desc: req.body.desc,
-        img: {
-            data: fs.readFileSync(path.join(__dirname + '/uploads/' + req.file.filename)),
-            contentType: 'image/png'
-        }
-    }
-    imgModel.create(obj, (err, item) => {
-        if (err) {
-            console.log(err);
-        }
-        else {
-            // item.save();
-            res.redirect('/');
-        }
-    });
-});
-
-// restict
 
 function restrict(req, res, next) {
   if (req.session.user) {
@@ -168,7 +122,7 @@ app.get("/", function (req, res) {
 });
 
 app.get("/restricted", restrict, function (req, res) {
-  res.render("restricted")
+  res.render("restricted");
 });
 
 app.get("/logout", function (req, res) {
@@ -202,6 +156,10 @@ app.post("/signup", function (req, res) {
       }
     }
   );
+});
+
+app.post("/upload", function (req, res) {
+  res.redirect("restricted")
 });
 
 app.post("/login", function (req, res) {
